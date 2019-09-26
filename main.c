@@ -77,13 +77,13 @@ int main(int argc, char *argv[]) {
     printf("valor de n: %d\n", n);
     printf("valor de b: %d\n", b);
 
+    //Here begins the cycle to read images.
+
     for(int i=1; i<=c; i++){
         char aux1[30] = "testImages/imagen_";
         char filename[35];
         char iAsString[100];
         sprintf(iAsString, "%d", i);
-
-        // printf("Imagenes a analizar: %s\n", strcat(strcat(aux1, iAsString), ".png"));
 
         strcpy(filename, strcat(strcat(aux1, iAsString), ".png"));
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
             abort();
         }
         
-        ImageStorage*  image = createImageStorage();
+        ImageStorage*  image = createImageStorage(); //Structure creation to save image.
 
         image->png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         
@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
         
         image->rows = png_get_rows (image->png_ptr, image->info_ptr);
 
-        imagesWaitingSecondStage++;
+
+        imagesWaitingSecondStage++; //The image has been read, so now must go to the second stage of the pipeline.
 
         pid_t pid;
         int fd[2];
@@ -138,13 +139,13 @@ int main(int argc, char *argv[]) {
             while (1){
                 if (imagesWaitingSecondStage > 0){
                     // Request Image through pipe
-                    // ConvolutionFunction
-                    // ImagesWaiting-- after dispatch the third stage
+                    // ConvolutionFunction(); //This it's going to be the second stage of the pipeline.
+                    // ImagesWaiting-- after dispatch the third stage (This goes inside the convolution function).
                 }
             }
         } else {
             // ImagesWaitingSecondSage++;
-            // Send Image through pipe
+            // Send Image through pipe to convolution function.
         }
     }
 
