@@ -49,7 +49,7 @@ int** imageToInt(ImageStorage* image){
     return image_matrix;
 }
 
-// With pipes, the function would be without parameters. This is the second stage of the pipeline
+// With pipes, the function would be without parameters. This is the third stage of the pipeline
 void rectification(float** filtered_matrix, int rows, int columns){
     for (int i = 0; i < rows; i++) for (int j = 0; j < columns; j++) if (filtered_matrix[i][j] < 0) filtered_matrix[i][j] = 0;
 
