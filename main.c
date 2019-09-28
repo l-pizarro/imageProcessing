@@ -57,36 +57,21 @@ void rectification(float** filtered_matrix, int rows, int columns){
 }
 
 // With pipes, the function would be without parameters. This is the second stage of the pipeline
-void applyConvolution(ImageStorage* imageStructure){
-    // Here I assume the data coming from the pipes.
+void applyConvolution(int** image, int rows, int columns, char* filename){
+    
+    // REQUIRED DATA FROM PIPES.
     // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
     // int rows, columns. The dimensions of the image to process.
     // int** image. The image to be filtered by the convolution matrix.
-
-
-    int** image = imageToInt(imageStructure); //This should come through pipe
-    int rows, columns; // This should come through pipe
-
-    rows = imageStructure->height;
-    columns = png_get_rowbytes (imageStructure->png_ptr, imageStructure->info_ptr);
-
-
-    // THE COMMENTED LINES BELOW ARE WERE MADE ONLY FOR TESTING
-    // printf("################ PRINT DE LA IMAGEN filas %d Columnas%d ################\n", rows, columns);
-
-    // for (int i = 0; i < rows; i++){
-    //     for (int j = 0; j < columns; j++) printf("%d ", image[i][j]);
-    //     printf("\n");
-    // }
-
-    // printf("################ FIN PRINT DE LA IMAGEN ################\n");
 
     int** conv_matrix;
     conv_matrix = (int**)calloc(3, sizeof(int*));
 
     for (int i=0; i<3; i++) conv_matrix[i] = (int*)calloc(3, sizeof(int));
 
-    FILE* file_matrix = fopen("test.txt", "r"); // test.txt should be replaced by 'filename', coming from a pipe.
+
+    printf("filename: %s\n", filename);
+    FILE* file_matrix = fopen(filename, "r");
 
     if (! file_matrix){
         perror("Error opening file. Quitting...");
@@ -113,6 +98,8 @@ void applyConvolution(ImageStorage* imageStructure){
 
     float** filtered_matrix;
     filtered_matrix = (float**)calloc(rows , sizeof(float*));
+
+
     for (int i = 0; i < rows; i++) filtered_matrix[i] = (float*)calloc(columns, sizeof(float));
 
     for (int i = 1; i < rows - 1; i++){
@@ -125,14 +112,6 @@ void applyConvolution(ImageStorage* imageStructure){
 
     rectification(filtered_matrix, rows, columns);
     // return filtered_matrix; //This should be sent to third stage of pipeline
-
-    // THE NEXT LINES ARE MADE ONLY FOR TESTING
-    // printf("################ PRINT DE LA CONVOLUCIÓN ################\n");
-    // for (int i = 0; i < rows; i++){
-    //     for (int j = 0; j < columns; j++) printf("%d ", filtered_matrix[i][j]);
-    //     printf("\n");
-    // }
-    // printf("################ FIN PRINT DE LA CONVOLUCIÓN ################\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -141,13 +120,7 @@ int main(int argc, char *argv[]) {
     int     n   = 0;
     int     b   = 0;
 
-    // int     c  = 0;
-    // int     n  = 0;
-
-    // char    mvalue[50];
-
     int c;
-    // opterr = 0;
 
     while ((c = getopt(argc, argv, "c:m:n:b")) != -1) {
         switch (c) {
@@ -155,7 +128,7 @@ int main(int argc, char *argv[]) {
                 sscanf(optarg, "%d", &cvalue);
                 break;
             case 'm':
-                //Here must go a strcpy. I'll do this later.
+                strcpy(mfile, optarg);
                 break;
             case 'n':
                 sscanf(optarg, "%d", &n);
@@ -182,13 +155,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    printf("nombre del archivo convolución: %s\n", mfile);
     printf("valor de c: %d\n", cvalue);
     printf("valor de n: %d\n", n);
     printf("valor de b: %d\n", b);
 
     //Here begins the cycle to read images.
-
-
 
     for(int i=1; i<=cvalue; i++){
         char aux1[30] = "testImages/imagen_";
@@ -232,8 +204,12 @@ int main(int argc, char *argv[]) {
         
         image->rows = png_get_rows (image->png_ptr, image->info_ptr);
 
-        applyConvolution(image);
+        int** image_matrix = imageToInt(image);
+        int rows, columns;
+        rows = image->height;
+        columns = png_get_rowbytes (image->png_ptr, image->info_ptr);
 
+        applyConvolution(image_matrix, rows, columns, mfile);
     }
 
     return 0;
