@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <math.h>
 
 typedef struct imageStorage {
     png_structp png_ptr;
@@ -49,14 +50,41 @@ int** imageToInt(ImageStorage* image){
     return image_matrix;
 }
 
+// With pipes, the function would be without parameters. This is the fourth stage of the pipeline
+// IMPORTANT: I'LL ASSUME THAT THE POOLING MATRIX WILL ALWAYS BE A 2x2 MATRIX, BECAUSE ISN'T SPECIFIED
+void pooling(float** rectificated_matrix, int rows, int columns){
+    float** pooled_image;
+    pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
+    
+    for (int i = 0; i < floor(rows/2); i++) pooled_image[i] = (float*)calloc(floor(columns/2), sizeof(float));
+
+    if (rows % 2 != 0) rows--;
+    if (columns % 2 != 0) columns--;
+
+    for (int i = 0; i < rows; i = i + 2){
+        for (int j = 0; j < columns; j = j + 2){
+            float max = rectificated_matrix[i][j];
+
+            if (rectificated_matrix[i][j+1] > max) max = rectificated_matrix[i][j+1];
+            if (rectificated_matrix[i+1][j] > max) max = rectificated_matrix[i+1][j];
+            if (rectificated_matrix[i+1][j+1] > max) max = rectificated_matrix[i+1][j+1];
+
+            pooled_image[i/2][j/2] = max;
+        }
+    }
+
+    // now pooled_image should be sent to the 5th stage of the pipeline.
+}
+
 // With pipes, the function would be without parameters. This is the third stage of the pipeline
 void rectification(float** filtered_matrix, int rows, int columns){
     for (int i = 0; i < rows; i++) for (int j = 0; j < columns; j++) if (filtered_matrix[i][j] < 0) filtered_matrix[i][j] = 0;
-
+        
+    pooling(filtered_matrix, rows, columns);
     // now filtered_matrix should be sent to 4th stage of pipeline.
 }
 
-// With pipes, the function would be without parameters. This is the second stage of the pipeline
+// With pipes, the function would be without parameters. This is the second stage of the pipeline.
 void applyConvolution(int** image, int rows, int columns, char* filename){
     
     // REQUIRED DATA FROM PIPES.
