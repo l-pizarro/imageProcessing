@@ -49,7 +49,14 @@ int** imageToInt(ImageStorage* image){
     return image_matrix;
 }
 
-// With pipes, the function would be without parameters.
+// With pipes, the function would be without parameters. This is the second stage of the pipeline
+void rectification(float** filtered_matrix, int rows, int columns){
+    for (int i = 0; i < rows; i++) for (int j = 0; j < columns; j++) if (filtered_matrix[i][j] < 0) filtered_matrix[i][j] = 0;
+
+    // now filtered_matrix should be sent to 4th stage of pipeline.
+}
+
+// With pipes, the function would be without parameters. This is the second stage of the pipeline
 void applyConvolution(ImageStorage* imageStructure){
     // Here I assume the data coming from the pipes.
     // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
@@ -104,9 +111,9 @@ void applyConvolution(ImageStorage* imageStructure){
 
     fclose(file_matrix);
 
-    int** filtered_matrix;
-    filtered_matrix = (int**)calloc(rows , sizeof(int*));
-    for (int i = 0; i < rows; i++) filtered_matrix[i] = (int*)calloc(columns, sizeof(int));
+    float** filtered_matrix;
+    filtered_matrix = (float**)calloc(rows , sizeof(float*));
+    for (int i = 0; i < rows; i++) filtered_matrix[i] = (float*)calloc(columns, sizeof(float));
 
     for (int i = 1; i < rows - 1; i++){
         for (int j = 1; j < columns - 1; j++){
@@ -116,6 +123,7 @@ void applyConvolution(ImageStorage* imageStructure){
         }
     }
 
+    rectification(filtered_matrix, rows, columns);
     // return filtered_matrix; //This should be sent to third stage of pipeline
 
     // THE NEXT LINES ARE MADE ONLY FOR TESTING
