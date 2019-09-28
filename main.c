@@ -7,8 +7,6 @@
 #include <ctype.h>
 #include <unistd.h>
 
-int imagesWaitingSecondStage = 0;
-
 typedef struct imageStorage {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -24,6 +22,109 @@ typedef struct imageStorage {
 
 ImageStorage* createImageStorage(){
     return (ImageStorage*)calloc(1, sizeof(ImageStorage));
+}
+
+int** imageToInt(ImageStorage* image){
+    png_bytepp rows = png_get_rows (image->png_ptr, image->info_ptr);
+
+    int rowbytes;
+    rowbytes = png_get_rowbytes (image->png_ptr, image->info_ptr);
+
+    int** image_matrix;
+    image_matrix = (int**)calloc(image->height, sizeof(int*));
+    for (int i = 0; i < image->height; i++) image_matrix[i] = (int*)calloc(rowbytes, sizeof(int));
+
+    for (int i = 0; i < image->height; i++) {
+        png_bytep row;
+        row = rows[i];
+        for (int j = 0; j < rowbytes; j++) {
+            png_byte pixel;
+            pixel = row[j];
+            
+            image_matrix[i][j] = pixel;
+
+        }
+    }
+
+    return image_matrix;
+}
+
+// With pipes, the function would be without parameters.
+void applyConvolution(ImageStorage* imageStructure){
+    // Here I assume the data coming from the pipes.
+    // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
+    // int rows, columns. The dimensions of the image to process.
+    // int** image. The image to be filtered by the convolution matrix.
+
+
+    int** image = imageToInt(imageStructure); //This should come through pipe
+    int rows, columns; // This should come through pipe
+
+    rows = imageStructure->height;
+    columns = png_get_rowbytes (imageStructure->png_ptr, imageStructure->info_ptr);
+
+
+    // THE COMMENTED LINES BELOW ARE WERE MADE ONLY FOR TESTING
+    // printf("################ PRINT DE LA IMAGEN filas %d Columnas%d ################\n", rows, columns);
+
+    // for (int i = 0; i < rows; i++){
+    //     for (int j = 0; j < columns; j++) printf("%d ", image[i][j]);
+    //     printf("\n");
+    // }
+
+    // printf("################ FIN PRINT DE LA IMAGEN ################\n");
+
+    int** conv_matrix;
+    conv_matrix = (int**)calloc(3, sizeof(int*));
+
+    for (int i=0; i<3; i++) conv_matrix[i] = (int*)calloc(3, sizeof(int));
+
+    FILE* file_matrix = fopen("test.txt", "r"); // test.txt should be replaced by 'filename', coming from a pipe.
+
+    if (! file_matrix){
+        perror("Error opening file. Quitting...");
+        
+        for (int i = 0; i < 3; i++) free(conv_matrix[i]);
+        free(conv_matrix);
+        exit(1);
+    }
+
+    int row = 0;
+
+    while (! feof(file_matrix)){
+        int a, b, c;
+
+        fscanf(file_matrix, "%d %d %d", &a, &b, &c);
+
+        conv_matrix[row][0] = a;
+        conv_matrix[row][1] = b;
+        conv_matrix[row][2] = c;
+        row++;
+    }
+
+    fclose(file_matrix);
+
+    int** filtered_matrix;
+    filtered_matrix = (int**)calloc(rows , sizeof(int*));
+    for (int i = 0; i < rows; i++) filtered_matrix[i] = (int*)calloc(columns, sizeof(int));
+
+    for (int i = 1; i < rows - 1; i++){
+        for (int j = 1; j < columns - 1; j++){
+            float value = 0;
+            value = (image[i-1][j-1] * conv_matrix[0][0] + image[i-1][j] * conv_matrix[0][1] + image[i-1][j+1] * conv_matrix[0][2] + image[i][j-1] * conv_matrix[1][0] + image[i][j] * conv_matrix[1][1] + image[i][j+1] * conv_matrix[1][2] + image[i+1][j-1] * conv_matrix[2][0] + image[i+1][j] * conv_matrix[2][1] + image[i+1][j+1] * conv_matrix[2][2]) / 9;
+            filtered_matrix[i][j] = value;
+        }
+    }
+
+    // return filtered_matrix; //This should be sent to third stage of pipeline
+
+    // THE NEXT LINES ARE MADE ONLY FOR TESTING
+    // printf("################ PRINT DE LA CONVOLUCIÓN ################\n");
+    // for (int i = 0; i < rows; i++){
+    //     for (int j = 0; j < columns; j++) printf("%d ", filtered_matrix[i][j]);
+    //     printf("\n");
+    // }
+    // printf("################ FIN PRINT DE LA CONVOLUCIÓN ################\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -79,7 +180,9 @@ int main(int argc, char *argv[]) {
 
     //Here begins the cycle to read images.
 
-    for(int i=1; i<=c; i++){
+
+
+    for(int i=1; i<=cvalue; i++){
         char aux1[30] = "testImages/imagen_";
         char filename[35];
         char iAsString[100];
@@ -121,32 +224,8 @@ int main(int argc, char *argv[]) {
         
         image->rows = png_get_rows (image->png_ptr, image->info_ptr);
 
+        applyConvolution(image);
 
-        imagesWaitingSecondStage++; //The image has been read, so now must go to the second stage of the pipeline.
-
-        pid_t pid;
-        int fd[2];
-        pipe(fd);
-
-        if (i == 1){
-            pid = fork();
-        }
-
-        if (pid < 0){
-            perror("Error in Fork!");
-            exit(1);
-        } else if (pid == 0){
-            while (1){
-                if (imagesWaitingSecondStage > 0){
-                    // Request Image through pipe
-                    // ConvolutionFunction(); //This it's going to be the second stage of the pipeline.
-                    // ImagesWaiting-- after dispatch the third stage (This goes inside the convolution function).
-                }
-            }
-        } else {
-            // ImagesWaitingSecondSage++;
-            // Send Image through pipe to convolution function.
-        }
     }
 
     return 0;
