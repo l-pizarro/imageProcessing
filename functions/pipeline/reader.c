@@ -3,6 +3,9 @@
 #define READ 0
 #define WRITE 1
 
+//Entradas: int images_to_read -> indica la cantidad de imagenes a leer.
+//Funcionamiento: Encargada de leer las imagenes en PNG.
+//Salidas: No retorna.
 void read_images(int images_to_read)
 {
     for (int i=1; i <= images_to_read; i++) {
@@ -69,6 +72,9 @@ void read_images(int images_to_read)
     }
 }
 
+//Entradas: No posee entradas.
+//Funcionamiento: Recibe los datos desde el pipe, con tal de iniciar la función de lectura.
+//Salidas: No retorna.
 void init_reader()
 {
     // RECIVE THE ARGUMENTS FROM FATHER
@@ -103,6 +109,9 @@ void init_reader()
     }
 }
 
+//Entradas: No posee entradas.
+//Funcionamiento: Función principal.
+//Salidas: No retorna.
 int main()
 {
     init_reader();

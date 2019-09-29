@@ -3,6 +3,12 @@
 #define READ 0
 #define WRITE 1
 
+//Entradas: int cvalue -> Corresponde a la cantidad de imágenes a analizar en el pipeline
+//          int nvalue -> Corresponde al umbral de negrura sobre el cual concluir tras realizar los filtrados.
+//          char* mvalue -> Corresponde al nombre del archivo que contiene la matriz para realizar la convolución.
+//          int bflag -> Corresponde a una bandera que señaliza si los resultados se deben mostrar por salida estándar.
+//Funcionamiento: Es la encargada de aplicar la convolución a la imagen.
+//Salidas: No retorna.
 void convolve_images(int cvalue, int nvalue, char *mvalue, int bflag)
 {
     for (int image_to_convolve=0; image_to_convolve<cvalue; image_to_convolve++) {
@@ -55,6 +61,9 @@ void convolve_images(int cvalue, int nvalue, char *mvalue, int bflag)
     }
 }
 
+//Entradas: No posee entradas.
+//Funcionamiento: Recibe los datos desde el pipe, con tal de iniciar la función de convolución.
+//Salidas: No retorna.
 void init_convolver()
 {
     // RECIVE THE ARGUMENTS FROM POOLER
@@ -93,7 +102,9 @@ void init_convolver()
     }
 }
 
-
+//Entradas: No posee entradas.
+//Funcionamiento: Función principal.
+//Salidas: No retorna.
 int main()
 {
     init_convolver();

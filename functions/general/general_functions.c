@@ -2,6 +2,11 @@
 #define READ 0
 #define WRITE 1
 
+
+//Entradas: int argc -> Corresponde a la cantidad argumentos enviados a través de la entrada estándar
+//          char** argv -> Corresponde a un arreglo con los argumentos enviados a través de la entrada estándar
+//Funcionamiento: Es la encargada de recibir los datos desde la ejecución del programa, para comenzar el pipeline
+//Salidas: No retorna.
 void init_program(int argc, char **argv)
 {
 	int     cvalue = 0;
@@ -51,7 +56,13 @@ void init_program(int argc, char **argv)
 	init_pipeline(cvalue, nvalue, mvalue, bflag);
 }
 
-
+//Entradas: int cvalue -> Corresponde a la cantidad de imágenes a analizar en el pipeline
+//          int nvalue -> Corresponde al umbral de negrura sobre el cual concluir tras realizar los filtrados.
+//          char* mvalue -> Corresponde al nombre del archivo que contiene la matriz para realizar la convolución.
+//          int bflag -> Corresponde a una bandera que señaliza si los resultados se deben mostrar por salida estándar.
+//Funcionamiento: Es la encargada de comenzar el pipeline, entregando los parámetros necesarios para que la primera
+//                etapa sea capaz de leer.
+//Salidas: No retorna.
 
 void init_pipeline(int cvalue, int nvalue, char* mvalue, int bflag)
 {   

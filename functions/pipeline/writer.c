@@ -1,5 +1,10 @@
 #include "../general/general_functions.h"
 
+//Entradas: int cvalue -> Corresponde a la cantidad de imágenes a analizar en el pipeline
+//          int bflag -> Corresponde a una bandera que señaliza si los resultados se deben mostrar por salida estándar.
+//Funcionamiento: Es la encargada de escribir las conclusiones de la imagen, tanto en un archivo 'results.txt', 
+//                como por salida estándar, en caso de ser necesario.
+//Salidas: No retorna.
 void write_results(int cvalue, int bflag) {
     // OUTPUT FILE
     FILE* output_file;
@@ -42,6 +47,9 @@ void write_results(int cvalue, int bflag) {
     }
 }
 
+//Entradas: No posee entradas.
+//Funcionamiento: Recibe los datos desde el pipe, con tal de iniciar la función de escritura.
+//Salidas: No retorna.
 void init_writer()
 {
     // RECIVE THE ARGUMENTS FROM CLASIFIER
@@ -57,7 +65,9 @@ void init_writer()
     write_results(cvalue, bflag);
 }
 
-
+//Entradas: No posee entradas.
+//Funcionamiento: Función principal.
+//Salidas: No retorna.
 int main()
 {
     init_writer();

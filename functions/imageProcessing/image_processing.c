@@ -1,10 +1,16 @@
 #include "image_processing.h"
 
+//Entradas: No posee entradas
+//Funcionamiento: Permite crear una estructura capaz de almacenar un archivo PNG.
+//Salidas: ImageStorage* es un puntero a una estructura destinada a almacenar un archivo PNG.
 ImageStorage* createImageStorage()
 {
     return (ImageStorage*)calloc(1, sizeof(ImageStorage));
 }
 
+//Entradas: ImageStorage* puntero a una estructura con una imagen almacenada en formato PNG.
+//Funcionamiento: Recorre la imagen PNG y la transforma en una matriz de enteros, donde cada celda está en RGB.
+//Salidas: int** matriz de enteros que representa a la imagen en PNG.
 int** imageToInt(ImageStorage* image)
 {
     png_bytepp  rows            = png_get_rows (image->png_ptr, image->info_ptr);
@@ -30,7 +36,13 @@ int** imageToInt(ImageStorage* image)
     return image_matrix;
 }
 
-
+//Entradas: float** classified_image -> corresponde a la imagen ya clasificada.
+//          int rows -> cantidad de filas de la imagen clasificada.
+//          int columns -> cantidad de columnas de la imagen clasificada.
+//          char* imageName -> nombre de la imagen analizada.
+//          int isBlack -> bandera que indica el resultado del análisis. 1 si es casi negra, 0 sino.
+//Funcionamiento: Recibe los resultados de una imagen en particular. Escribe las conclusiones en 'results.txt'
+//Salidas: No retorna.
 void writter(float** classified_image, int rows, int columns, char* imageName, int isBlack)
 {
     FILE* output_file;
@@ -64,7 +76,14 @@ void writter(float** classified_image, int rows, int columns, char* imageName, i
     fclose(output_file); 
 }
 
-
+//Entradas: float** pooled_image -> corresponde a la imagen a clasificar.
+//          int rows -> cantidad de filas de la imagen a clasificar.
+//          int columns -> cantidad de columnas de la imagen a clasificar.
+//          int threshold -> valor que indica el umbral de negrura, sobre el cual clasificar la imagen
+//          char* imageName -> nombre de la imagen a clasificar.
+//          int b -> bandera que indica si se debe mostrar el resultado por salida estándar
+//Funcionamiento: Recibe una imagen desde 'pooling'. Se recorren sus pixeles y se calcula el porcentaje de pixeles negros.
+//Salidas: int que representa la clasificación. 1 si la imagen es casi negra, 0 sino.
 int classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b)
 {
     int blackPixels = 0;
@@ -84,33 +103,29 @@ int classify(float** pooled_image, int rows, int columns, int threshold, char* i
 
     if (((blackPixels / (rows * columns * 1.0)) * 100) >= threshold) isBlack = 1;
 
-    // printf("pixeles negros: %d\n", blackPixels);
-    // printf("total pixeles: %d\n", rows*columns);
-    // printf("Porcentaje negro/total: %f porciento\n", ((blackPixels / (rows * columns * 1.0)) * 100));
-    // printf("Umbral de negrura: %d porciento\n", threshold);
-
-    //Now the imageName and the 'isBlack' flag must be sent to the sixth stage of the pipeline
     if (b == 1){
         if (isBlack == 1)
         {
-            //printf("YES, %s is nearly black.\n", imageName);
             return 1;
         }
         else
         {
-            // printf("NO, %s isn't nearly black.\n", imageName);
             return 0;
         }
     }
     return 0;
-
-    //Now the imageName, the 'isBlack' flag, and the pooled_image must be sent to the sixth and last stage of pipeline
-    //writter(pooled_image, rows, columns, imageName, isBlack);
 }
 
 
-// With pipes, the function would be without parameters. This is the fourth stage of the pipeline
-// IMPORTANT: I'LL ASSUME THAT THE POOLING MATRIX WILL ALWAYS BE A 2x2 MATRIX, BECAUSE ISN'T SPECIFIED
+//Entradas: float** rectificated_matrix -> corresponde a la imagen a realizar 'pooling'.
+//          int rows -> cantidad de filas de la imagen a realizar 'pooling'.
+//          int columns -> cantidad de columnas de la imagen a realizar 'pooling'.
+//          int threshold -> valor que indica el umbral de negrura, sobre el cual clasificar la imagen en la siguiente etapa.
+//          char* imageName -> nombre de la imagen a realizar 'pooling'.
+//          int b -> bandera que indica si se debe mostrar el resultado por salida estándar.
+//Funcionamiento: Utilizando una matriz de 2x2, se buscar el mayor de entre 4 valores, para crear una matriz nueva con estos
+//                valores.
+//Salidas: flaot** matriz de flotantes que representan la imagen con los mayores números de cada sección.
 float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b)
 {
     float** pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
@@ -134,12 +149,19 @@ float** pooling(float** rectificated_matrix, int rows, int columns, int threshol
             pooled_image[i/2][j/2] = max;
         }
     }
-    // classify(pooled_image, floor(rows/2), floor(columns/2), threshold, imageName, b);
+
     return pooled_image;
 }
 
 
-// With pipes, the function would be without parameters. This is the third stage of the pipeline
+//Entradas: float** filtered_matrix -> corresponde a la imagen a rectificar.
+//          int rows -> cantidad de filas de la imagen a rectificar.
+//          int columns -> cantidad de columnas de la imagen a rectificar.
+//          int threshold -> valor que indica el umbral de negrura, sobre el cual clasificar la imagen en la siguiente etapa.
+//          char* imageName -> nombre de la imagen a rectificar.
+//          int b -> bandera que indica si se debe mostrar el resultado por salida estándar.
+//Funcionamiento: Se recorre la imagen. Si los valores son negativos, se establecen a 0.
+//Salidas: flaot** matriz de flotantes que representan la imagen rectificada.
 float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b)
 {
     for (int i = 0; i < rows; i++)
@@ -156,14 +178,18 @@ float** rectification(float** filtered_matrix, int rows, int columns, int thresh
     return filtered_matrix;
 }
 
-
+//Entradas: float** image -> corresponde a la representación de la imagen en PNG.
+//          int rows -> cantidad de filas de la imagen a realizar convolución.
+//          int columns -> cantidad de columnas de la imagen a realizar convolución.
+//          char* filename -> corresponde al archivo con la matriz de convolución.
+//          int threshold -> valor que indica el umbral de negrura, sobre el cual clasificar la imagen en la siguiente etapa.
+//          char* imageName -> nombre de la imagen a realizar convolución.
+//          int b -> bandera que indica si se debe mostrar el resultado por salida estándar.
+//Funcionamiento: Utilizando una matriz de 2x2, se buscar el mayor de entre 4 valores, para crear una matriz nueva con estos
+//                valores.
+//Salidas: flaot** matriz de flotantes que representan la imagen con los mayores números de cada sección.
 float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b)
 {    
-    // REQUIRED DATA FROM PIPES.
-    // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
-    // int rows, columns. The dimensions of the image to process.
-    // int** image. The image to be filtered by the convolution matrix.
-
     int** conv_matrix = (int**)calloc(3, sizeof(int*));
 
     for (int i=0; i<3; i++)
