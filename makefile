@@ -7,4 +7,13 @@ all:
 	gcc -I/usr/local/Cellar/libpng/1.6.37/include/libpng16 -L/usr/local/Cellar/libpng/1.6.37/lib -lpng16 ./functions/pipeline/clasifier.c functions/general/general_functions.c functions/imageProcessing/image_processing.c  -o clasifier -lm -Wall -lpng
 	gcc -I/usr/local/Cellar/libpng/1.6.37/include/libpng16 -L/usr/local/Cellar/libpng/1.6.37/lib -lpng16 ./functions/pipeline/writer.c functions/general/general_functions.c -o writer -lm -Wall -lpng
 run:
-	./laboratorio1 -c 4 -m test.txt -n 70 -b
+	./laboratorio1 -c 4 -m test.txt -n 20 -b
+
+clean:
+	rm clasifier
+	rm convolver
+	rm laboratorio1
+	rm pooler
+	rm reader
+	rm rectifier
+	rm writer

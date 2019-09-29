@@ -16,12 +16,20 @@ void init_program(int argc, char **argv)
         switch (command) {
             case 'c':
                 sscanf(optarg, "%d", &cvalue);
+                if (cvalue <= 0){
+                    perror("Se debe analizar al menos 1 imagen. (El valor de C no puede ser menor a 0)");
+                    exit(1);
+                }
                 break;
             case 'm':
                 sscanf(optarg, "%s", mvalue);
                 break;
             case 'n':
                 sscanf(optarg, "%d", &nvalue);
+                if (nvalue < 0 || nvalue > 100){
+                    perror("El umbral debe ser un valor entre 0 y 100");
+                    exit(1);
+                }
                 break;
             case 'b':
                 bflag = 1;

@@ -9,7 +9,8 @@ void write_results(int cvalue, int bflag) {
     fprintf(output_file, "| image | nearly black |\n");
     if (bflag)
     {
-        printf("| image | nearly black |\n");
+        printf("|          image          | nearly black |\n");
+        printf("-------------------------------------------\n");
     }
 
     for (int result_to_write=0; result_to_write<cvalue; result_to_write++)
@@ -20,10 +21,22 @@ void write_results(int cvalue, int bflag) {
         char filename[100];
         read(STDIN_FILENO, filename, 100);
 
-        fprintf(output_file, "| %s | %s |\n",filename, classification);
+        int flag = 0;
+
+        if (! strcmp("1", classification))
+            flag = 1;
+
+        if (flag)
+            fprintf(output_file, "| %s | %s |\n",filename, "      YES     ");
+        else
+            fprintf(output_file, "| %s | %s |\n",filename, "     NO      ");
+
         if (bflag)
-        {
-            printf("| %s | %s |\n",filename, classification);
+        {   
+            if (flag)
+                printf("| %s | %s |\n",filename, "     YES     ");
+            else
+                printf("| %s | %s |\n",filename, "     NO     ");
         }
 
     }
