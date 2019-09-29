@@ -88,7 +88,13 @@ void classify(float** pooled_image, int rows, int columns, int threshold, char* 
 
     int isBlack = 0;
 
-    if (floor(blackPixels / (rows * columns)) < threshold) isBlack = 1;
+    if (((blackPixels / (rows * columns * 1.0)) * 100) >= threshold) isBlack = 1;
+
+    printf("pixeles negros: %d\n", blackPixels);
+    printf("total pixeles: %d\n", rows*columns);
+
+    printf("Porcentaje negro/total: %f porciento\n", ((blackPixels / (rows * columns * 1.0)) * 100));
+    printf("Umbral de negrura: %d porciento\n", threshold);
 
     //Now the imageName and the 'isBlack' flag must be sent to the sixth stage of the pipeline
     if (b == 1){
@@ -151,7 +157,7 @@ void applyConvolution(int** image, int rows, int columns, char* filename, int th
     for (int i=0; i<3; i++) conv_matrix[i] = (int*)calloc(3, sizeof(int));
 
 
-    printf("filename: %s\n", filename);
+    printf("Archivo convolución: %s\n", filename);
     FILE* file_matrix = fopen(filename, "r");
 
     if (! file_matrix){
