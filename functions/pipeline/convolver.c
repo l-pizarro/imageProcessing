@@ -3,41 +3,26 @@
 #define READ 0
 #define WRITE 1
 
-void init_convolver()
+void convolve_images(int cvalue, int nvalue, char *mvalue, int bflag)
 {
-    // RECIVE THE ARGUMENTS FROM READER
-    char buffer[100];
-    read(STDIN_FILENO, buffer, 100);
-    printf("CONVOLVER RECIEVE BUFFER: %s", buffer);
-
-    // SPLIT THE BUFFER
-    char** arguments = (char**)calloc(4, sizeof(char*));
-    split_buffer(arguments, buffer, 4);
-    int cvalue = atoi(arguments[0]);
-    int nvalue = atoi(arguments[1]);
-    int bflag   = atoi(arguments[3]);
-
-    for (int image_to_read=0; image_to_read<cvalue; image_to_read++) {
+    for (int image_to_convolve=0; image_to_convolve<cvalue; image_to_convolve++) {
         // RECIVE THE FILENAME FROM READER
         char filename[100];
         read(STDIN_FILENO, filename, 100);
-        printf("CONVOLVER RECIEVE FILENAME: %s\n", filename);
 
         // RECIVE THE ROWS
         char rows[50];
         read(STDIN_FILENO, rows, 50);
-        printf("CONVOLVER RECIEVE ROWS: %s\n", rows);
 
         // RECIVE THE COLUMNS
         char cols[50];
         read(STDIN_FILENO, cols, 50);
-        printf("CONVOLVER RECIEVE COLS: %s\n", cols);
 
         // RECIVE THE IMAGE
         int** image_matrix = (int**)calloc(atoi(rows), sizeof(int*));
         for (int i=0; i<atoi(rows); i++)
         {
-            image_matrix[i] = (int*)calloc(atoi(cols), sizeof(int*));
+            image_matrix[i] = (int*)calloc(atoi(cols), sizeof(int));
             char pixel_value[4];
             for (int j=0; j<atoi(cols); j++)
             {
@@ -47,27 +32,65 @@ void init_convolver()
         }
 
         // APPLY CONVOLUTION
-        applyConvolution(image_matrix, atoi(rows), atoi(cols), arguments[2], nvalue, filename, bflag);
-    }
+        float** convolved_matrix = applyConvolution(image_matrix, atoi(rows), atoi(cols), mvalue, nvalue, filename, bflag);
 
+        // SEND THE CONVOLVED IMAGE TO THE RECTIFIER
+        //First: Send the rows
+        write(STDOUT_FILENO, rows, 50);
+        //Second: Send the columns
+        write(STDOUT_FILENO, cols, 50);
+        //Third: Send the convolved matrix
+        for (int i=0; i<atoi(rows); i++)
+        {
+            char convolved_value[20];
+            for (int j=0; j<atoi(cols); j++)
+            {
+                sprintf(convolved_value, "%f", convolved_matrix[i][j]);
+                write(STDOUT_FILENO, convolved_value, 20);
+            }
+        }
+        //Fourth: Send the filename
+        write(STDOUT_FILENO, filename, 100);
+
+    }
+}
+
+void init_convolver()
+{
+    // RECIVE THE ARGUMENTS FROM POOLER
+    char buffer[100];
+    read(STDIN_FILENO, buffer, 100);
+
+    // SPLIT THE BUFFER
+    char** arguments = (char**)calloc(4, sizeof(char*));
+    split_buffer(arguments, buffer, 4);
+    int cvalue = atoi(arguments[0]);
+    int nvalue = atoi(arguments[1]);
+    int bflag   = atoi(arguments[3]);
 
     // CONNECT WITH RECTIFIER
-    // int pipe_convolver_rectifier[2];
-    // pipe(pipe_convolver_rectifier);
+    int pipe_convolver_rectifier[2];
+    pipe(pipe_convolver_rectifier);
 
-    // int pid = fork();
+    int pid = fork();
 
-    // if (pid == 0) {
-    //     dup2(pipe_convolver_rectifier[READ], STDIN_FILENO);
-    //     close(pipe_convolver_rectifier[WRITE]);
-    //     execl("./rectifier", NULL);
-    // }
-    // else {
-    //     dup2(pipe_convolver_rectifier[WRITE], STDOUT_FILENO);
-    //     close(pipe_convolver_rectifier[READ]);
-    //     write(STDOUT_FILENO, "It's a msg from convolver\n", 27);
-    //     wait(&pid);
-    // }
+    if (pid == 0) {
+        dup2(pipe_convolver_rectifier[READ], STDIN_FILENO);
+        close(pipe_convolver_rectifier[WRITE]);
+        execl("./rectifier", NULL);
+    }
+    else {
+        dup2(pipe_convolver_rectifier[WRITE], STDOUT_FILENO);
+        close(pipe_convolver_rectifier[READ]);
+
+        // PASS THE ARGUMENTS THOUGH PIPELINE
+        write(STDOUT_FILENO, buffer, 100);
+
+        // CONVOLVE IMAGES AND SEND THEM TO RECTIFIER
+        convolve_images(cvalue, nvalue, arguments[2], bflag);
+
+        wait(&pid);
+    }
 }
 
 

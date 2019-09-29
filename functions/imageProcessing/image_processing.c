@@ -65,7 +65,7 @@ void writter(float** classified_image, int rows, int columns, char* imageName, i
 }
 
 
-void classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b)
+int classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b)
 {
     int blackPixels = 0;
 
@@ -82,32 +82,36 @@ void classify(float** pooled_image, int rows, int columns, int threshold, char* 
 
     int isBlack = 0;
 
-    if (floor(blackPixels / (rows * columns)) < threshold)
-    {
-        isBlack = 1;
-    }
+    if (((blackPixels / (rows * columns * 1.0)) * 100) >= threshold) isBlack = 1;
+
+    // printf("pixeles negros: %d\n", blackPixels);
+    // printf("total pixeles: %d\n", rows*columns);
+    // printf("Porcentaje negro/total: %f porciento\n", ((blackPixels / (rows * columns * 1.0)) * 100));
+    // printf("Umbral de negrura: %d porciento\n", threshold);
 
     //Now the imageName and the 'isBlack' flag must be sent to the sixth stage of the pipeline
-    if (b == 1)
-    {
+    if (b == 1){
         if (isBlack == 1)
         {
-            printf("YES, %s is nearly black.\n", imageName);
+            //printf("YES, %s is nearly black.\n", imageName);
+            return 1;
         }
         else
         {
-            printf("NO, %s isn't nearly black.\n", imageName);
+            // printf("NO, %s isn't nearly black.\n", imageName);
+            return 0;
         }
     }
+    return 0;
 
     //Now the imageName, the 'isBlack' flag, and the pooled_image must be sent to the sixth and last stage of pipeline
-    writter(pooled_image, rows, columns, imageName, isBlack);
+    //writter(pooled_image, rows, columns, imageName, isBlack);
 }
 
 
 // With pipes, the function would be without parameters. This is the fourth stage of the pipeline
 // IMPORTANT: I'LL ASSUME THAT THE POOLING MATRIX WILL ALWAYS BE A 2x2 MATRIX, BECAUSE ISN'T SPECIFIED
-void pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b)
+float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b)
 {
     float** pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
     
@@ -130,13 +134,13 @@ void pooling(float** rectificated_matrix, int rows, int columns, int threshold, 
             pooled_image[i/2][j/2] = max;
         }
     }
-    // now pooled_image should be sent to the 5th stage of the pipeline.
-    classify(pooled_image, floor(rows/2), floor(columns/2), threshold, imageName, b);
+    // classify(pooled_image, floor(rows/2), floor(columns/2), threshold, imageName, b);
+    return pooled_image;
 }
 
 
 // With pipes, the function would be without parameters. This is the third stage of the pipeline
-void rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b)
+float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b)
 {
     for (int i = 0; i < rows; i++)
     {
@@ -149,12 +153,11 @@ void rectification(float** filtered_matrix, int rows, int columns, int threshold
         }
     }
 
-    pooling(filtered_matrix, rows, columns, threshold, imageName, b);
-    // now filtered_matrix should be sent to 4th stage of pipeline.
+    return filtered_matrix;
 }
 
 
-void applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b)
+float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b)
 {    
     // REQUIRED DATA FROM PIPES.
     // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
@@ -168,7 +171,6 @@ void applyConvolution(int** image, int rows, int columns, char* filename, int th
         conv_matrix[i] = (int*)calloc(3, sizeof(int));
     }
 
-    //printf("filename: %s\n", filename);
     FILE* file_matrix = fopen(filename, "r");
 
     if (! file_matrix){
@@ -215,6 +217,5 @@ void applyConvolution(int** image, int rows, int columns, char* filename, int th
         }
     }
 
-    rectification(filtered_matrix, rows, columns, threshold, imageName, b);
-    // return filtered_matrix; //This should be sent to third stage of pipeline
+    return filtered_matrix;
 }

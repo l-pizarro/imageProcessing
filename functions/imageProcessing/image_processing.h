@@ -28,10 +28,10 @@ int** imageToInt(ImageStorage* image);
 
 void writter(float** classified_image, int rows, int columns, char* imageName, int isBlack);
 
-void classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b);
+int classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b);
 
-void pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b);
+float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b);
 
-void rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b);
+float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b);
 
-void applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b);
+float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b);

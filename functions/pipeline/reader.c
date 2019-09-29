@@ -71,9 +71,9 @@ void read_images(int images_to_read)
 
 void init_reader()
 {
+    // RECIVE THE ARGUMENTS FROM FATHER
     char buffer[100];
     read(STDIN_FILENO, buffer, 100);
-    printf("READER RECIVE: %s", buffer);
 
     // SPLIT BUFFER
     char** arguments = (char**)calloc(4, sizeof(char*));
