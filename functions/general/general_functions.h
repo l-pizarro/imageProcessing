@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -6,7 +7,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-void init_program();
-void get_inputs (int argc, char **argv, int* cvalue, int* nvalue, int* bflag);
-void init_pipeline();
-void read_image (char *png_file);
+void init_program(int argc, char **argv);
+void init_pipeline(int cvalue, int nvalue, char* mvalue, int bflag);
+void split_buffer(char** destiny, char* buffer, int items);

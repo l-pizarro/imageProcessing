@@ -40,14 +40,15 @@ void init_program(int argc, char **argv)
                 abort();
         }
     }
-	init_pipeline();
+	init_pipeline(cvalue, nvalue, mvalue, bflag);
 }
 
 
 
-
-void init_pipeline()
+void init_pipeline(int cvalue, int nvalue, char* mvalue, int bflag)
 {   
+    char buffer[100];
+    sprintf(buffer, "%d %d %s %d\n", cvalue, nvalue, mvalue, bflag);
     int pipe_father_reader[2];
     pipe(pipe_father_reader);
 
@@ -61,7 +62,24 @@ void init_pipeline()
     else {
         dup2(pipe_father_reader[WRITE], STDOUT_FILENO);
         close(pipe_father_reader[READ]);
-        write(STDOUT_FILENO, "It's a msg from father\n", 24);
+        write(STDOUT_FILENO, buffer, 100);
         wait(&pid);
     }
+}
+
+
+
+void split_buffer(char** destiny, char* buffer, int items)
+{
+    char *str = (char*)calloc(strlen(buffer), sizeof(char));
+    strcpy(str, buffer);
+    char *ptr = strtok(str, " ");
+
+    for (int i=0; i<items; i++)
+    {
+        destiny[i] = (char*)calloc(strlen(ptr), sizeof(char));
+        strcpy(destiny[i], ptr);
+        ptr = strtok(NULL, " ");
+    }
+    free(str);
 }
