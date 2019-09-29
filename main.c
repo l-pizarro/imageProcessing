@@ -50,9 +50,61 @@ int** imageToInt(ImageStorage* image){
     return image_matrix;
 }
 
+void writter(float** classified_image, int rows, int columns, char* imageName, int isBlack){
+    FILE* f;
+    f = fopen("results.txt", "a");
+
+    if (! f){
+        perror("Error creando imagen.");
+        exit(2);
+    }
+
+    fprintf(f, "############## RESULTADOS DE LA IMAGEN %s ##############\n\n", imageName);
+
+    if (isBlack == 1)
+        fprintf(f, "YES, %s is nearly black.\n\n", imageName);
+    else
+        fprintf(f, "NO, %s isn't nearly black.\n\n", imageName);
+
+    fprintf(f, "LA MATRIZ SOBRE LA CUAL SE REALIZÓ EL ANÁLISIS ES LA SIGUIENTE: \n\n");
+
+
+    for (int i = 0; i < rows; i++){
+        for (int j = 0; j < columns; j++) fprintf(f, "%f ", classified_image[i][j]);
+        fprintf(f, "\n");
+    }
+
+    fprintf(f, "############## FIN RESULTADOS DE LA IMAGEN %s ##############\n\n", imageName);
+
+    fclose(f);
+    
+}
+
+// With pipes, the function would be without parameters. This is the fifth stage of the pipeline
+void classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b){
+    int blackPixels = 0;
+
+    for (int i = 0; i < rows; i++) for (int j = 0; j < columns; j++) if (pooled_image[i][j] == 0) blackPixels++;
+
+    int isBlack = 0;
+
+    if (floor(blackPixels / (rows * columns)) < threshold) isBlack = 1;
+
+    //Now the imageName and the 'isBlack' flag must be sent to the sixth stage of the pipeline
+    if (b == 1){
+        if (isBlack == 1)
+            printf("YES, %s is nearly black.\n", imageName);
+        else
+            printf("NO, %s isn't nearly black.\n", imageName);
+    }
+
+    //Now the imageName, the 'isBlack' flag, and the pooled_image must be sent to the sixth and last stage of pipeline
+    writter(pooled_image, rows, columns, imageName, isBlack);
+}
+
 // With pipes, the function would be without parameters. This is the fourth stage of the pipeline
 // IMPORTANT: I'LL ASSUME THAT THE POOLING MATRIX WILL ALWAYS BE A 2x2 MATRIX, BECAUSE ISN'T SPECIFIED
-void pooling(float** rectificated_matrix, int rows, int columns){
+void pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b){
     float** pooled_image;
     pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
     
@@ -74,18 +126,19 @@ void pooling(float** rectificated_matrix, int rows, int columns){
     }
 
     // now pooled_image should be sent to the 5th stage of the pipeline.
+    classify(pooled_image, floor(rows/2), floor(columns/2), threshold, imageName, b);
 }
 
 // With pipes, the function would be without parameters. This is the third stage of the pipeline
-void rectification(float** filtered_matrix, int rows, int columns){
+void rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b){
     for (int i = 0; i < rows; i++) for (int j = 0; j < columns; j++) if (filtered_matrix[i][j] < 0) filtered_matrix[i][j] = 0;
-        
-    pooling(filtered_matrix, rows, columns);
+
+    pooling(filtered_matrix, rows, columns, threshold, imageName, b);
     // now filtered_matrix should be sent to 4th stage of pipeline.
 }
 
 // With pipes, the function would be without parameters. This is the second stage of the pipeline.
-void applyConvolution(int** image, int rows, int columns, char* filename){
+void applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b){
     
     // REQUIRED DATA FROM PIPES.
     // char* filename is the name of the file that contains the 3x3 matrix with the convolution rules.
@@ -138,7 +191,7 @@ void applyConvolution(int** image, int rows, int columns, char* filename){
         }
     }
 
-    rectification(filtered_matrix, rows, columns);
+    rectification(filtered_matrix, rows, columns, threshold, imageName, b);
     // return filtered_matrix; //This should be sent to third stage of pipeline
 }
 
@@ -237,7 +290,7 @@ int main(int argc, char *argv[]) {
         rows = image->height;
         columns = png_get_rowbytes (image->png_ptr, image->info_ptr);
 
-        applyConvolution(image_matrix, rows, columns, mfile);
+        applyConvolution(image_matrix, rows, columns, mfile, n, filename, b);
     }
 
     return 0;
