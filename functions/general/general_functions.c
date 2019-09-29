@@ -86,8 +86,11 @@ void init_pipeline(int cvalue, int nvalue, char* mvalue, int bflag)
     }
 }
 
-
-
+//Entradas: char** -> Corresponde a una 'lista' de palabras divididas.
+//          char* buffer -> Corresponde a una frase que se desea separar.
+//          int items -> Cantidad de separaciones que se le quiere hacer a la frase
+//Funcionamiento: Procedimiento que permite separar una frase con espacios, en 'items' cantidad de palabras.
+//Salidas: No retorna.
 void split_buffer(char** destiny, char* buffer, int items)
 {
     char *str = (char*)calloc(strlen(buffer), sizeof(char));
