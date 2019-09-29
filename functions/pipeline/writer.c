@@ -11,7 +11,8 @@ void write_results(int cvalue, int bflag) {
     output_file = fopen("results.txt", "w");
 
 
-    fprintf(output_file, "| image | nearly black |\n");
+    fprintf(output_file, "|          image          | nearly black |\n");
+    fprintf(output_file, "-------------------------------------------\n");
     if (bflag)
     {
         printf("|          image          | nearly black |\n");

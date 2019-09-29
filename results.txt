@@ -1,4 +1,5 @@
-| image | nearly black |
+|          image          | nearly black |
+-------------------------------------------
 | testImages/imagen_1.png |       YES      |
 | testImages/imagen_2.png |      NO       |
 | testImages/imagen_3.png |      NO       |
