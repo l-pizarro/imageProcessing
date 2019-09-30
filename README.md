@@ -24,7 +24,7 @@ This program comes with a makefile. To compile it, make sure to be on the root f
 make all
 ```
 
-Once done, there will be a executable for the program called **iamge_proc**. You can also manually compile this program, must use GCC to do it (see the commands in the makefile).
+Once done, there will be a executable for the program called **image_proc**. You can also manually compile this program, must use GCC to do it (see the commands in the makefile).
 
 ## Running the program
 
