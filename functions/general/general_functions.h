@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <png.h>
 
 void init_program(int argc, char **argv);
 void init_pipeline(int cvalue, int nvalue, char* mvalue, int bflag);
