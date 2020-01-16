@@ -22,6 +22,14 @@ typedef struct imageStorage
     png_bytepp rows;
 } ImageStorage;
 
+typedef struct thread_identifier{
+    int identifier;
+    int rowsToRead;
+    int colsAmount;
+    char* filter_filename;
+    float** rowsToWork;
+}ThreadContext;
+
 ImageStorage* createImageStorage();
 
 int** imageToInt(ImageStorage* image);
@@ -34,4 +42,4 @@ float** pooling(float** rectificated_matrix, int rows, int columns, int threshol
 
 float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b);
 
-float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b);
+float** applyConvolution(ThreadContext* thread);

@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <png.h>
 #include <pthread.h>
+#include <string.h>
 
 void init_program(int argc, char **argv);
 void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue, int bflag);

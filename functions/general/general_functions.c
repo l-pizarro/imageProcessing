@@ -1,12 +1,12 @@
 #include "../general/general_functions.h"
+#include "../general/barrier_implementation.h"
 #include "../imageProcessing/image_processing.h"
 #define READ 0
 #define WRITE 1
 
-
+pthread_barrier_t* barriers;
 int** matrix_buffer;
 int img_to_read = 1;
-
 
 //Entradas: int argc -> Corresponde a la cantidad argumentos enviados a través de la entrada estándar
 //          char** argv -> Corresponde a un arreglo con los argumentos enviados a través de la entrada estándar
@@ -149,12 +149,86 @@ void notifyTheFiller(int tvalue){
     pthread_join(master, NULL);
 }
 
-void* syncThreads(void* rowsToRead){
-    int designatedRows = (int) rowsToRead;
-    printf("Yo soy una hebra y debo leer %d filas\n", designatedRows);
-    //read
-    //sync all threads
-    //Convolution
+void reader(ThreadContext* thread){
+    int z = 0;
+    for (int i = thread->identifier * thread->rowsToRead; i < (thread->identifier + 1) * thread->rowsToRead, z < thread->rowsToRead; i++, z++){
+        for (int j = 0; j < thread->colsAmount; j++){
+            printf("i:%d, j:%d, z:%d\n", i, j, z);
+            thread->rowsToWork[z][j] = matrix_buffer[i][j];
+        }
+    }
+}
+
+float** applyConvolution(ThreadContext* thread)
+{    
+    int** conv_matrix = (int**)calloc(3, sizeof(int*));
+
+    for (int i=0; i<3; i++)
+    {
+        conv_matrix[i] = (int*)calloc(3, sizeof(int));
+    }
+
+    FILE* file_matrix = fopen(thread->filter_filename, "r");
+
+    if (! file_matrix){
+        perror("Error opening file. Quitting...");
+        
+        for (int i = 0; i < 3; i++)
+        {
+            free(conv_matrix[i]);
+        }
+        free(conv_matrix);
+        exit(1);
+    }
+
+    int row = 0;
+
+    while (! feof(file_matrix))
+    {
+        int a, b, c;
+        fscanf(file_matrix, "%d %d %d", &a, &b, &c);
+        conv_matrix[row][0] = a;
+        conv_matrix[row][1] = b;
+        conv_matrix[row][2] = c;
+        row++;
+    }
+
+    fclose(file_matrix);
+
+    float** filtered_matrix;
+    filtered_matrix = (float**)calloc(thread->rowsToRead , sizeof(float*));
+
+
+    for (int i = 0; i < thread->rowsToRead; i++)
+    {
+        filtered_matrix[i] = (float*)calloc(thread->colsAmount, sizeof(float));
+    }
+
+    for (int i = 1; i < thread->rowsToRead - 1; i++)
+    {
+        for (int j = 1; j < thread->colsAmount - 1; j++)
+        {
+            float value = 0;
+            value = (thread->rowsToWork[i-1][j-1] * conv_matrix[0][0] + thread->rowsToWork[i-1][j] * conv_matrix[0][1] + thread->rowsToWork[i-1][j+1] * conv_matrix[0][2] + thread->rowsToWork[i][j-1] * conv_matrix[1][0] + thread->rowsToWork[i][j] * conv_matrix[1][1] + thread->rowsToWork[i][j+1] * conv_matrix[1][2] + thread->rowsToWork[i+1][j-1] * conv_matrix[2][0] + thread->rowsToWork[i+1][j] * conv_matrix[2][1] + thread->rowsToWork[i+1][j+1] * conv_matrix[2][2]) / 9;
+            filtered_matrix[i][j] = value;
+        }
+    }
+
+    return filtered_matrix;
+}
+
+void* syncThreads(void* param){
+    ThreadContext* threadContext = (ThreadContext*) param;
+    reader(threadContext);
+    pthread_barrier_wait(&barriers[0]);
+    float** convolvedMatrix = applyConvolution(threadContext);
+    pthread_barrier_wait(&barriers[1]);
+    for (int i = 0; i < threadContext->rowsToRead; i++){
+        for (int j = 0; j < threadContext->colsAmount; j++){
+            printf("%f", convolvedMatrix[i][j]);
+        }
+        printf("\n");
+    }
     //sync all threads
     //all the other stages.
 }
@@ -176,16 +250,29 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
         exit(1);
     }
 
+
+    pthread_t* thread_array = (pthread_t*)calloc(hvalue, sizeof(pthread_t));
+    barriers = (pthread_barrier_t*) calloc(5, sizeof(pthread_barrier_t));
+
+    for (int i = 0; i < 5; i++)
+        pthread_barrier_init(&barriers[i], NULL, hvalue);
+
     notifyTheFiller(tvalue);
 
     //The master thread has filled the buffer. Now the slaves threads must go to work.
 
-    pthread_t* thread_array = (pthread_t*)calloc(hvalue, sizeof(pthread_t));
-
-
-
     for (int i = 0; i < hvalue; i++){
-        pthread_create(&thread_array[i], NULL, syncThreads, (void*) rowsToRead);
+        ThreadContext* threadContext = (ThreadContext*)calloc(1, sizeof(ThreadContext));
+        threadContext->identifier = i;
+        threadContext->rowsToRead = rowsToRead;
+        threadContext->colsAmount = tvalue;
+        threadContext->rowsToWork = (float**)calloc(rowsToRead, sizeof(float*));
+        threadContext->filter_filename = (float**)calloc(100, sizeof(float*));
+        strcpy(threadContext->filter_filename, mvalue);
+        for (int j = 0; j < rowsToRead; j++)
+            threadContext->rowsToWork[j] = (float*)calloc(tvalue, sizeof(float));
+
+        pthread_create(&thread_array[i], NULL, syncThreads, (void*) threadContext);
     }
 
     for (int i = 0; i < hvalue; i++){
@@ -197,40 +284,12 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
     }
     free(matrix_buffer);
 
-    if (img_to_read < cvalue){
-        img_to_read++;
-        init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
-    }
-
-    // for (int i = 0; i < tvalue; i++){
-    //     for (int j = 0; j < tvalue; j++){
-    //         printf("%d ", matrix_buffer[i][j]);
-    //     }
-    //     printf("\n");
+    // if (img_to_read < cvalue){
+    //     img_to_read++;
+    //     init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
     // }
 
     return;
-
-
-
-    // char buffer[100];
-    // sprintf(buffer, "%d %d %s %d\n", cvalue, nvalue, mvalue, bflag);
-    // int pipe_father_reader[2];
-    // pipe(pipe_father_reader);
-
-    // int pid = fork();
-
-    // if (pid == 0) {
-    //     dup2(pipe_father_reader[READ], STDIN_FILENO);
-    //     close(pipe_father_reader[WRITE]);
-    //     execl("./reader", NULL);
-    // }
-    // else {
-    //     dup2(pipe_father_reader[WRITE], STDOUT_FILENO);
-    //     close(pipe_father_reader[READ]);
-    //     write(STDOUT_FILENO, buffer, 100);
-    //     wait(&pid);
-    // }
 }
 
 //Entradas: char** -> Corresponde a una 'lista' de palabras divididas.

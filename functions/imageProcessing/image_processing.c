@@ -188,60 +188,60 @@ float** rectification(float** filtered_matrix, int rows, int columns, int thresh
 //Funcionamiento: Utilizando una matriz de 2x2, se buscar el mayor de entre 4 valores, para crear una matriz nueva con estos
 //                valores.
 //Salidas: flaot** matriz de flotantes que representan la imagen con los mayores números de cada sección.
-float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b)
-{    
-    int** conv_matrix = (int**)calloc(3, sizeof(int*));
+// float** applyConvolution(int** image, int rows, int columns, char* filename, int threshold, char* imageName, int b)
+// {    
+//     int** conv_matrix = (int**)calloc(3, sizeof(int*));
 
-    for (int i=0; i<3; i++)
-    {
-        conv_matrix[i] = (int*)calloc(3, sizeof(int));
-    }
+//     for (int i=0; i<3; i++)
+//     {
+//         conv_matrix[i] = (int*)calloc(3, sizeof(int));
+//     }
 
-    FILE* file_matrix = fopen(filename, "r");
+//     FILE* file_matrix = fopen(filename, "r");
 
-    if (! file_matrix){
-        perror("Error opening file. Quitting...");
+//     if (! file_matrix){
+//         perror("Error opening file. Quitting...");
         
-        for (int i = 0; i < 3; i++)
-        {
-            free(conv_matrix[i]);
-        }
-        free(conv_matrix);
-        exit(1);
-    }
+//         for (int i = 0; i < 3; i++)
+//         {
+//             free(conv_matrix[i]);
+//         }
+//         free(conv_matrix);
+//         exit(1);
+//     }
 
-    int row = 0;
+//     int row = 0;
 
-    while (! feof(file_matrix))
-    {
-        int a, b, c;
-        fscanf(file_matrix, "%d %d %d", &a, &b, &c);
-        conv_matrix[row][0] = a;
-        conv_matrix[row][1] = b;
-        conv_matrix[row][2] = c;
-        row++;
-    }
+//     while (! feof(file_matrix))
+//     {
+//         int a, b, c;
+//         fscanf(file_matrix, "%d %d %d", &a, &b, &c);
+//         conv_matrix[row][0] = a;
+//         conv_matrix[row][1] = b;
+//         conv_matrix[row][2] = c;
+//         row++;
+//     }
 
-    fclose(file_matrix);
+//     fclose(file_matrix);
 
-    float** filtered_matrix;
-    filtered_matrix = (float**)calloc(rows , sizeof(float*));
+//     float** filtered_matrix;
+//     filtered_matrix = (float**)calloc(rows , sizeof(float*));
 
 
-    for (int i = 0; i < rows; i++)
-    {
-        filtered_matrix[i] = (float*)calloc(columns, sizeof(float));
-    }
+//     for (int i = 0; i < rows; i++)
+//     {
+//         filtered_matrix[i] = (float*)calloc(columns, sizeof(float));
+//     }
 
-    for (int i = 1; i < rows - 1; i++)
-    {
-        for (int j = 1; j < columns - 1; j++)
-        {
-            float value = 0;
-            value = (image[i-1][j-1] * conv_matrix[0][0] + image[i-1][j] * conv_matrix[0][1] + image[i-1][j+1] * conv_matrix[0][2] + image[i][j-1] * conv_matrix[1][0] + image[i][j] * conv_matrix[1][1] + image[i][j+1] * conv_matrix[1][2] + image[i+1][j-1] * conv_matrix[2][0] + image[i+1][j] * conv_matrix[2][1] + image[i+1][j+1] * conv_matrix[2][2]) / 9;
-            filtered_matrix[i][j] = value;
-        }
-    }
+//     for (int i = 1; i < rows - 1; i++)
+//     {
+//         for (int j = 1; j < columns - 1; j++)
+//         {
+//             float value = 0;
+//             value = (image[i-1][j-1] * conv_matrix[0][0] + image[i-1][j] * conv_matrix[0][1] + image[i-1][j+1] * conv_matrix[0][2] + image[i][j-1] * conv_matrix[1][0] + image[i][j] * conv_matrix[1][1] + image[i][j+1] * conv_matrix[1][2] + image[i+1][j-1] * conv_matrix[2][0] + image[i+1][j] * conv_matrix[2][1] + image[i+1][j+1] * conv_matrix[2][2]) / 9;
+//             filtered_matrix[i][j] = value;
+//         }
+//     }
 
-    return filtered_matrix;
-}
+//     return filtered_matrix;
+// }
