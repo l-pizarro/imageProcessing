@@ -40,6 +40,6 @@ int classify(float** pooled_image, int rows, int columns, int threshold, char* i
 
 float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b);
 
-float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b);
+float** rectification(ThreadContext* thread, float** filtered_matrix);
 
 float** applyConvolution(ThreadContext* thread);

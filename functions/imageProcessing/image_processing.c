@@ -162,21 +162,21 @@ float** pooling(float** rectificated_matrix, int rows, int columns, int threshol
 //          int b -> bandera que indica si se debe mostrar el resultado por salida estándar.
 //Funcionamiento: Se recorre la imagen. Si los valores son negativos, se establecen a 0.
 //Salidas: flaot** matriz de flotantes que representan la imagen rectificada.
-float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < columns; j++)
-        {
-            if (filtered_matrix[i][j] < 0)
-            {
-                filtered_matrix[i][j] = 0;
-            }
-        }
-    }
+// float** rectification(float** filtered_matrix, int rows, int columns, int threshold, char* imageName, int b)
+// {
+//     for (int i = 0; i < rows; i++)
+//     {
+//         for (int j = 0; j < columns; j++)
+//         {
+//             if (filtered_matrix[i][j] < 0)
+//             {
+//                 filtered_matrix[i][j] = 0;
+//             }
+//         }
+//     }
 
-    return filtered_matrix;
-}
+//     return filtered_matrix;
+// }
 
 //Entradas: float** image -> corresponde a la representación de la imagen en PNG.
 //          int rows -> cantidad de filas de la imagen a realizar convolución.

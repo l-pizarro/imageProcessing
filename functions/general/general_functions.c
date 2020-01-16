@@ -153,7 +153,6 @@ void reader(ThreadContext* thread){
     int z = 0;
     for (int i = thread->identifier * thread->rowsToRead; i < (thread->identifier + 1) * thread->rowsToRead, z < thread->rowsToRead; i++, z++){
         for (int j = 0; j < thread->colsAmount; j++){
-            printf("i:%d, j:%d, z:%d\n", i, j, z);
             thread->rowsToWork[z][j] = matrix_buffer[i][j];
         }
     }
@@ -217,18 +216,30 @@ float** applyConvolution(ThreadContext* thread)
     return filtered_matrix;
 }
 
+float** rectification(ThreadContext* thread, float** convolvedMatrix){
+    for (int i = 0; i < thread->rowsToRead; i++){
+        for (int j = 0; j < thread->colsAmount; j++){
+            if (convolvedMatrix[i][j] < 0){
+                convolvedMatrix[i][j] = 0;
+            }
+        }
+    }
+
+    return convolvedMatrix;
+}
+
 void* syncThreads(void* param){
     ThreadContext* threadContext = (ThreadContext*) param;
     reader(threadContext);
     pthread_barrier_wait(&barriers[0]);
     float** convolvedMatrix = applyConvolution(threadContext);
+    printf("Hebra %d: Ya filtró la imagen\n", threadContext->identifier);
     pthread_barrier_wait(&barriers[1]);
-    for (int i = 0; i < threadContext->rowsToRead; i++){
-        for (int j = 0; j < threadContext->colsAmount; j++){
-            printf("%f", convolvedMatrix[i][j]);
-        }
-        printf("\n");
-    }
+    float** rectificated = rectification(threadContext, convolvedMatrix);
+    printf("Hebra %d: Ya rectificó la imagen\n", threadContext->identifier);
+    pthread_barrier_wait(&barriers[2]);
+
+    return NULL;
     //sync all threads
     //all the other stages.
 }
@@ -267,7 +278,7 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
         threadContext->rowsToRead = rowsToRead;
         threadContext->colsAmount = tvalue;
         threadContext->rowsToWork = (float**)calloc(rowsToRead, sizeof(float*));
-        threadContext->filter_filename = (float**)calloc(100, sizeof(float*));
+        threadContext->filter_filename = (char*)calloc(100, sizeof(float*));
         strcpy(threadContext->filter_filename, mvalue);
         for (int j = 0; j < rowsToRead; j++)
             threadContext->rowsToWork[j] = (float*)calloc(tvalue, sizeof(float));
