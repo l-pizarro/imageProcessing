@@ -372,7 +372,7 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
     }
     free(matrix_buffer);
 
-    printf("La hebra padre determina que un %f%c de los pixeles está por debajo del umbral", (underLevel/(total*1.0))*100, 37);
+    printf("La hebra padre determina que un %f%c de los pixeles está por debajo del umbral\n", (underLevel/(total*1.0))*100, 37);
     // if (img_to_read < cvalue){
     //     img_to_read++;
     //     init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
