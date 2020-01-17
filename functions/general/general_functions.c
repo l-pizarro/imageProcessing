@@ -6,6 +6,7 @@
 
 pthread_barrier_t* barriers;
 int** matrix_buffer;
+float** finalMatrix;
 int img_to_read = 1;
 int minLevel = 0;
 int underLevel = 0;
@@ -274,7 +275,7 @@ float** pooling(ThreadContext* thread, float** rectificatedMatrix, int* pooledRo
             nineValues[7] = rectificatedMatrix[(rowIter*3) + 2][(colIter*3 + 1) % thread->colsAmount];
             nineValues[8] = rectificatedMatrix[(rowIter*3) + 2][(colIter*3 + 2) % thread->colsAmount];
             pooledSubmatrix[rowIter][colIter] = findMax(nineValues, 9);
-            free(nineValues);
+            // free(nineValues);
         }
     }
 
@@ -293,7 +294,18 @@ int countUnderLevel(float** pooledMatrix, int rows, int cols) {
     return pixelsUnderLevel;
 }
 
+void fillFinalMatrix(ThreadContext* thread, float** pooled, int rows, int cols){
+    int z = 0;
+    for (int i = thread->identifier * rows; i < (thread->identifier + 1) * rows; i++, z++){
+        for (int j = 0; j < cols; j++){
 
+            // printf("hebra: %d i:%d, j:%d, cols: %d, rows: %d\n", thread->identifier, i, j, cols, rows);
+            // printf("hebra %d: EQUIVALENCIA: final i: %d, final j: %d inicial i: %d inicial j: %d\n", thread->identifier, i, j, z, j);
+            finalMatrix[i][j] = pooled[z][j];
+        }
+    }
+    printf("\n");
+}  
 
 void* syncThreads(void* param){
     ThreadContext* threadContext = (ThreadContext*) param;
@@ -313,11 +325,102 @@ void* syncThreads(void* param){
     int underLevelPixels = countUnderLevel(pooled, rows, cols);
     underLevel += underLevelPixels;
     total += rows*cols;
+    // printf("rows: %d cols: \n", );
+    fillFinalMatrix(threadContext, pooled, rows, cols);
     printf("Hebra %d: Encontró %d pixeles bajo el umbral, de un total de %d\n", threadContext->identifier, underLevelPixels, rows*cols);
     pthread_barrier_wait(&barriers[4]);
     return NULL;
     //sync all threads
     //all the other stages.
+}
+
+void save_png_to_file (float** bitmap, int width, int height)
+{
+    FILE * fp;
+    png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    size_t x, y;
+    png_byte ** row_pointers = NULL;
+    /* "status" contains the return value of this function. At first
+       it is set to a value which means 'failure'. When the routine
+       has finished its work, it is set to a value which means
+       'success'. */
+    int status = -1;
+    /* The following number is set by trial and error only. I cannot
+       see where it it is documented in the libpng manual.
+    */
+    int pixel_size = 3;
+    int depth = 8;
+
+    char filename[100];
+    sprintf(filename, "output/out_%d.png", img_to_read);
+    
+    fp = fopen (filename, "wb");
+    if (! fp) {
+        perror("fallo apertura archivo");
+        exit(1);
+    }
+
+    png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (png_ptr == NULL) {
+        perror("fallé creando una struct linea 95");
+        exit(1);
+    }
+    
+    info_ptr = png_create_info_struct (png_ptr);
+    if (info_ptr == NULL) {
+        perror("fallé creando una struct linea 101");
+        exit(1);
+    }
+    
+    /* Set up error handling. */
+
+    if (setjmp (png_jmpbuf (png_ptr))) {
+        perror("error en esta cosa");
+        exit(1);
+    }
+    
+    /* Set image attributes. */
+
+    png_set_IHDR (png_ptr,
+                  info_ptr,
+                  width,
+                  height,
+                  depth,
+                  PNG_COLOR_TYPE_RGB,
+                  PNG_INTERLACE_NONE,
+                  PNG_COMPRESSION_TYPE_DEFAULT,
+                  PNG_FILTER_TYPE_DEFAULT);
+    
+    /* Initialize rows of PNG. */
+
+    row_pointers = png_malloc (png_ptr, height * sizeof (png_byte *));
+    for (y = 0; y < height; y++) {
+        png_byte *row = 
+            png_malloc (png_ptr, sizeof (uint8_t) * width * pixel_size);
+        row_pointers[y] = row;
+        for (x = 0; x < width; x++) {
+            *row++ = bitmap[x][y];
+        }
+    }
+    
+    /* Write the image data to "fp". */
+
+    png_init_io (png_ptr, fp);
+    png_set_rows (png_ptr, info_ptr, row_pointers);
+    png_write_png (png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+    /* The routine has successfully written the file, so we set
+       "status" to a value which indicates success. */
+
+    status = 0;
+    
+    // for (y = 0; y < height; y++) {
+    //     png_free (png_ptr, row_pointers[y]);
+    // }
+    // png_free (png_ptr, row_pointers);
+    
+    fclose (fp);
 }
 
 //Entradas: int cvalue -> Corresponde a la cantidad de imágenes a analizar en el pipeline
@@ -349,6 +452,13 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
 
     //The master thread has filled the buffer. Now the slaves threads must go to work.
 
+    finalMatrix = (float**)calloc(rowsToRead, sizeof(float*));
+    for (int i = 0; i < rowsToRead; i++){
+        finalMatrix[i] = (float*)calloc(tvalue/3, sizeof(float));
+    }
+
+    // printf("filas: %d columnas: %d\n", rowsToRead, tvalue/3);
+
     for (int i = 0; i < hvalue; i++){
         ThreadContext* threadContext = (ThreadContext*)calloc(1, sizeof(ThreadContext));
         threadContext->identifier = i;
@@ -367,16 +477,13 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
         pthread_join(thread_array[i], NULL);
     }
 
-    for (int i = 0; i < tvalue; i++){
-        free(matrix_buffer[i]);
-    }
-    free(matrix_buffer);
+    save_png_to_file(finalMatrix, tvalue/3, rowsToRead);
 
-    printf("La hebra padre determina que un %f%c de los pixeles está por debajo del umbral", (underLevel/(total*1.0))*100, 37);
-    // if (img_to_read < cvalue){
-    //     img_to_read++;
-    //     init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
-    // }
+    printf("La hebra padre determina que un %f%c de los pixeles está por debajo del umbral\n", (underLevel/(total*1.0))*100, 37);
+    if (img_to_read < cvalue){
+        img_to_read++;
+        init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
+    }
 
     return;
 }
@@ -386,17 +493,17 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
 //          int items -> Cantidad de separaciones que se le quiere hacer a la frase
 //Funcionamiento: Procedimiento que permite separar una frase con espacios, en 'items' cantidad de palabras.
 //Salidas: No retorna.
-void split_buffer(char** destiny, char* buffer, int items)
-{
-    char *str = (char*)calloc(strlen(buffer), sizeof(char));
-    strcpy(str, buffer);
-    char *ptr = strtok(str, " ");
+// void split_buffer(char** destiny, char* buffer, int items)
+// {
+//     char *str = (char*)calloc(strlen(buffer), sizeof(char));
+//     strcpy(str, buffer);
+//     char *ptr = strtok(str, " ");
 
-    for (int i=0; i<items; i++)
-    {
-        destiny[i] = (char*)calloc(strlen(ptr), sizeof(char));
-        strcpy(destiny[i], ptr);
-        ptr = strtok(NULL, " ");
-    }
-    free(str);
-}
+//     for (int i=0; i<items; i++)
+//     {
+//         destiny[i] = (char*)calloc(strlen(ptr), sizeof(char));
+//         strcpy(destiny[i], ptr);
+//         ptr = strtok(NULL, " ");
+//     }
+//     free(str);
+// }
