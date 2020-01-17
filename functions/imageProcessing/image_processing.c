@@ -126,32 +126,32 @@ int classify(float** pooled_image, int rows, int columns, int threshold, char* i
 //Funcionamiento: Utilizando una matriz de 2x2, se buscar el mayor de entre 4 valores, para crear una matriz nueva con estos
 //                valores.
 //Salidas: flaot** matriz de flotantes que representan la imagen con los mayores números de cada sección.
-float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b)
-{
-    float** pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
+// float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b)
+// {
+//     float** pooled_image = (float**)calloc(floor(rows/2), sizeof(float*));
     
-    for (int i = 0; i < floor(rows/2); i++)
-    {
-        pooled_image[i] = (float*)calloc(floor(columns/2), sizeof(float));
-    }
+//     for (int i = 0; i < floor(rows/2); i++)
+//     {
+//         pooled_image[i] = (float*)calloc(floor(columns/2), sizeof(float));
+//     }
 
-    if (rows % 2 != 0) rows--;
-    if (columns % 2 != 0) columns--;
+//     if (rows % 2 != 0) rows--;
+//     if (columns % 2 != 0) columns--;
 
-    for (int i = 0; i < rows; i = i + 2)
-    {
-        for (int j = 0; j < columns; j = j + 2)
-        {
-            float max = rectificated_matrix[i][j];
-            if (rectificated_matrix[i][j+1] > max)      max = rectificated_matrix[i][j+1];
-            if (rectificated_matrix[i+1][j] > max)      max = rectificated_matrix[i+1][j];
-            if (rectificated_matrix[i+1][j+1] > max)    max = rectificated_matrix[i+1][j+1];
-            pooled_image[i/2][j/2] = max;
-        }
-    }
+//     for (int i = 0; i < rows; i = i + 2)
+//     {
+//         for (int j = 0; j < columns; j = j + 2)
+//         {
+//             float max = rectificated_matrix[i][j];
+//             if (rectificated_matrix[i][j+1] > max)      max = rectificated_matrix[i][j+1];
+//             if (rectificated_matrix[i+1][j] > max)      max = rectificated_matrix[i+1][j];
+//             if (rectificated_matrix[i+1][j+1] > max)    max = rectificated_matrix[i+1][j+1];
+//             pooled_image[i/2][j/2] = max;
+//         }
+//     }
 
-    return pooled_image;
-}
+//     return pooled_image;
+// }
 
 
 //Entradas: float** filtered_matrix -> corresponde a la imagen a rectificar.

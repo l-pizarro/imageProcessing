@@ -38,7 +38,7 @@ void writter(float** classified_image, int rows, int columns, char* imageName, i
 
 int classify(float** pooled_image, int rows, int columns, int threshold, char* imageName, int b);
 
-float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b);
+// float** pooling(float** rectificated_matrix, int rows, int columns, int threshold, char* imageName, int b);
 
 float** rectification(ThreadContext* thread, float** filtered_matrix);
 

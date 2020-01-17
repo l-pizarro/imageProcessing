@@ -7,7 +7,7 @@ all:
 # 	gcc -I/usr/local/Cellar/libpng/1.6.37/include/libpng16 -L/usr/local/Cellar/libpng/1.6.37/lib -lpng16 ./functions/pipeline/clasifier.c functions/general/general_functions.c functions/imageProcessing/image_processing.c functions/general/barrier_implementation.c -o clasifier -lm -Wall -lpng
 # 	gcc -I/usr/local/Cellar/libpng/1.6.37/include/libpng16 -L/usr/local/Cellar/libpng/1.6.37/lib -lpng16 ./functions/pipeline/writer.c functions/general/general_functions.c functions/imageProcessing/image_processing.c functions/general/barrier_implementation.c -o writer -lm -Wall -lpng
 run:
-	./lab2 -c 4 -m test.txt -n 20 -b -h 3 -t 9
+	./lab2 -c 4 -m test.txt -n 40 -b -h 3 -t 9
 
 clean:
 # 	rm clasifier

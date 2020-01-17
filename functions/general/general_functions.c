@@ -7,6 +7,9 @@
 pthread_barrier_t* barriers;
 int** matrix_buffer;
 int img_to_read = 1;
+int minLevel = 0;
+int underLevel = 0;
+int total = 0;
 
 //Entradas: int argc -> Corresponde a la cantidad argumentos enviados a través de la entrada estándar
 //          char** argv -> Corresponde a un arreglo con los argumentos enviados a través de la entrada estándar
@@ -228,6 +231,70 @@ float** rectification(ThreadContext* thread, float** convolvedMatrix){
     return convolvedMatrix;
 }
 
+float findMax(float* array, int len) {
+    float max = array[0];
+    for (int i = 0; i < len; i++) {
+        if (array[i] > max) {
+            max = array[i];
+        }
+    }
+    return max;
+}
+
+float** pooling(ThreadContext* thread, float** rectificatedMatrix, int* pooledRows, int* pooledCols){
+    int rows = thread->rowsToRead/3;
+    int cols = thread->colsAmount/3;
+    
+    // Add one more column if its amounth is not multiple of 3
+    if (thread->colsAmount%3 != 0) {
+        cols = (thread->colsAmount/3) + 1;
+    }
+
+    *pooledCols = cols;
+    *pooledRows = rows;
+
+    float** pooledSubmatrix = (float**)calloc(rows, sizeof(float*));
+    
+    for (int i = 0; i < cols; i++) {
+        pooledSubmatrix[i] = (float*)calloc(cols, sizeof(float));
+    }
+
+    // Find the max value for every 3by3 matrix in rectificatedMatrix
+    // This solution can be improved, but for now, this is the fast code: Put all values on a array and find it 
+    for (int rowIter = 0; rowIter < rows; rowIter++) {
+        for (int colIter = 0; colIter < cols; colIter++) {
+            float* nineValues = (float*)calloc(9, sizeof(float));
+            nineValues[0] = rectificatedMatrix[(rowIter*3) + 0][(colIter*3 + 0) % thread->colsAmount];
+            nineValues[1] = rectificatedMatrix[(rowIter*3) + 0][(colIter*3 + 1) % thread->colsAmount];
+            nineValues[2] = rectificatedMatrix[(rowIter*3) + 0][(colIter*3 + 2) % thread->colsAmount];
+            nineValues[3] = rectificatedMatrix[(rowIter*3) + 1][(colIter*3 + 0) % thread->colsAmount];
+            nineValues[4] = rectificatedMatrix[(rowIter*3) + 1][(colIter*3 + 1) % thread->colsAmount];
+            nineValues[5] = rectificatedMatrix[(rowIter*3) + 1][(colIter*3 + 2) % thread->colsAmount];
+            nineValues[6] = rectificatedMatrix[(rowIter*3) + 2][(colIter*3 + 0) % thread->colsAmount];
+            nineValues[7] = rectificatedMatrix[(rowIter*3) + 2][(colIter*3 + 1) % thread->colsAmount];
+            nineValues[8] = rectificatedMatrix[(rowIter*3) + 2][(colIter*3 + 2) % thread->colsAmount];
+            pooledSubmatrix[rowIter][colIter] = findMax(nineValues, 9);
+            free(nineValues);
+        }
+    }
+
+    return pooledSubmatrix;
+}
+
+int countUnderLevel(float** pooledMatrix, int rows, int cols) {
+    int pixelsUnderLevel = 0;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (pooledMatrix[i][j] < minLevel) {
+                pixelsUnderLevel++;
+            }
+        }
+    }
+    return pixelsUnderLevel;
+}
+
+
+
 void* syncThreads(void* param){
     ThreadContext* threadContext = (ThreadContext*) param;
     reader(threadContext);
@@ -238,7 +305,16 @@ void* syncThreads(void* param){
     float** rectificated = rectification(threadContext, convolvedMatrix);
     printf("Hebra %d: Ya rectificó la imagen\n", threadContext->identifier);
     pthread_barrier_wait(&barriers[2]);
-
+    int rows;
+    int cols;
+    float** pooled = pooling(threadContext, rectificated, &rows, &cols);
+    printf("Hebra %d: Ya agrupó la imagen [%d][%d]\n", threadContext->identifier, rows, cols);
+    pthread_barrier_wait(&barriers[3]);
+    int underLevelPixels = countUnderLevel(pooled, rows, cols);
+    underLevel += underLevelPixels;
+    total += rows*cols;
+    printf("Hebra %d: Encontró %d pixeles bajo el umbral, de un total de %d\n", threadContext->identifier, underLevelPixels, rows*cols);
+    pthread_barrier_wait(&barriers[4]);
     return NULL;
     //sync all threads
     //all the other stages.
@@ -254,6 +330,7 @@ void* syncThreads(void* param){
 
 void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue, int bflag)
 {   
+    minLevel = nvalue;
 
     int rowsToRead = tvalue / hvalue;
     if (rowsToRead % 3 != 0){
@@ -295,6 +372,7 @@ void init_pipeline(int cvalue, int hvalue, int tvalue, int nvalue, char* mvalue,
     }
     free(matrix_buffer);
 
+    printf("La hebra padre determina que un %f%c de los pixeles está por debajo del umbral", (underLevel/(total*1.0))*100, 37);
     // if (img_to_read < cvalue){
     //     img_to_read++;
     //     init_pipeline(cvalue, hvalue, tvalue, nvalue, mvalue, bflag);
